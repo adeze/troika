@@ -72,7 +72,18 @@ npm test            # Jest across all packages
 npm test -- --watch # Watch mode
 ```
 
-Test config in [jest.config.js](../jest.config.js) enables `collectCoverage: true` by default.
+**Test config**: [jest.config.js](../jest.config.js) includes:
+
+- `collectCoverage: true` by default for coverage reporting
+- `moduleNameMapper` that redirects package imports to source (`src/index.js`) instead of UMD builds (critical for Node.js test environment)
+- `testEnvironment: "jsdom"` for DOM simulation in tests
+
+**VS Code Integration**: The Jest extension is pre-configured in [troika.code-workspace](../troika.code-workspace):
+
+- Run tests directly from the VS Code Test Explorer (file sidebar)
+- Hover over tests to see pass/fail status
+- Use "Run", "Debug", or "Run All" buttons in the test explorer
+- Keyboard shortcut: `Cmd+Shift+T` to toggle test explorer
 
 ### Build Artifacts
 
@@ -148,17 +159,82 @@ JSX wrapper syntax exists but has overhead (createElement calls, prop allocation
 - Example: `packages/troika-core/__tests__/facade/` for facade tests
 - Use `ref` in descriptors to inspect facade instances in tests
 
+### Running Tests
+
+**Command line:**
+
+```bash
+npm test                    # Run all tests
+npm test -- --watch         # Watch mode (re-run on file changes)
+npm test -- --coverage      # Generate coverage report
+npm test -- troika-core     # Run tests for specific package
+```
+
+**VS Code Test Explorer:**
+
+1. Open the Test Explorer from the sidebar (beaker icon)
+2. Browse test files organized by package
+3. Click the play icon to run individual tests
+4. Click the debug icon to debug tests with breakpoints
+5. Filter tests by name using the search box
+
 ### Debugging Tips
 
 - **World3DFacade**: Provides `.world` property to inspect render queue, facade tree
 - **Three.js Inspector**: Browser console `scene.children` to inspect object hierarchy
 - **Coverage**: Run `npm test -- --coverage` to see which paths lack tests
+- **Debug breakpoints**: Use VS Code's debug configuration "Jest Current File" or "Jest All" to set breakpoints and step through tests
+
+### Important Test Configuration Notes
+
+- **Module Resolution**: `jest.config.js` uses `moduleNameMapper` to redirect all troika package imports to their source files (`src/index.js`), not UMD builds. This is essential because:
+  - UMD builds assume browser globals like `window` which don't exist in Node.js
+  - Source files use ES modules which Jest transforms via Babel
+- **Babel Transformation**: [babel.config.js](../babel.config.js) transforms JSX and modern JavaScript for Jest:
+  - Uses `@babel/preset-env` for JavaScript compatibility
+  - Uses `@babel/preset-react` for JSX support
+  - Caches config using `api.cache.using()`
+- **React 19 Compatibility**: The `isReactElement()` utility in [troika-core/src/utils.js](../packages/troika-core/src/utils.js) detects both:
+  - React <19: `Symbol(react.element)`
+  - React 19+: `Symbol(react.transitional.element)`
 
 ### Local Development
 
 - After changes, run `npm run build` to populate `dist/` folders
 - Import via `module:src` field (package.json) points to unbuilt source during development
 - For examples: `npm run examples` starts dev server with HMR
+
+### VS Code Setup
+
+The workspace is pre-configured with:
+
+**Launch Configurations** (`../.vscode/launch.json`):
+
+- `Jest Current File` - Debug current test file with breakpoints
+- `Jest All` - Debug entire test suite
+- `Node Attach` - Attach to running Node process
+- `Chrome Attach` - Attach to Chrome for browser debugging
+
+**Tasks** (`../.vscode/tasks.json`):
+
+- `npm: Build All Packages` - Build entire monorepo
+- `npm: Build Examples` - Build examples separately
+- `npm: Test All` - Run full test suite
+- `npm: Lint All` - Run ESLint across all packages
+- `npm: Run Examples Dev Server` - Start dev server for examples
+- `npm: Bootstrap (Lerna)` - Install and link sibling packages
+
+**Settings** (`../.vscode/settings.json`):
+
+- Automatic ESLint fixing on save
+- Prettier formatting for JS/JSON/Markdown
+- Jest extension configured for test discovery and execution
+
+**Workspace Configuration** (`../troika.code-workspace`):
+
+- Single root folder configuration for proper Jest extension integration
+- Pre-configured Jest settings with `npm test` command
+- Recommended VS Code extensions listed
 
 ## Versioning & Publishing
 
